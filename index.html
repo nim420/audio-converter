@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="纯前端 批量音频转换：MP4/MIDI → WAV/MP3/FLAC 等，文件不上传服务器。优化了移动端上传体验（相机拍摄、缩略图、触控友好）。" />
-  <title>本地音频批量转换器 · Sonora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="纯前端 MP4、MOV、WebM 转 WAV 等音频格式工具，文件不会上传到服务器。" />
+  <title>本地音频转换器 · MP4 转 WAV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,62 +20,40 @@
   <main>
     <section class="hero">
       <p class="eyebrow">LOCAL AUDIO WORKSPACE <span></span></p>
-      <h1>批量转换 · 本地处理<br><em>不上传你的文件</em></h1>
-      <p class="intro">支持视频/音频/MIDI 批量转换为 WAV、MP3、FLAC、OGG、WebM。所有处理在浏览器完成。</p>
+      <h1>把视频里的声音<br><em>带走。</em></h1>
+      <p class="intro">MP4 转 WAV，也支持 WebM、MOV 等常见视频格式。<br>所有处理都在你的浏览器中完成，文件不会离开设备。</p>
     </section>
 
     <section class="converter-card" aria-label="音频格式转换器">
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择或拖入文件">
-        <input id="fileInput" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.mp3,.wav,.m4a,.mid,.midi" hidden multiple>
+        <input id="fileInput" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.mp3,.wav,.m4a" hidden>
         <div class="upload-icon"><span>↑</span></div>
-        <h2>拖入文件（可多选），或<span>点击选择</span></h2>
-        <p>支持 MP4 · MOV · WebM · MP3 · WAV · M4A · MIDI</p>
-        <div class="size-note">单个文件最大 2 GB <i>·</i> 批量转换按序处理以节省内存</div>
+        <h2>拖入文件，或<span>点击选择</span></h2>
+        <p>支持 MP4 · MOV · WebM · MP3 · WAV · M4A</p>
+        <div class="size-note">单个文件最大 2 GB <i>·</i> 无需注册</div>
       </div>
 
-      <div class="controls">
-        <div class="preset">
-          <label for="presetSelect">预设</label>
-          <select id="presetSelect">
-            <option value="high_mp3">高品质 MP3 · 48 kHz</option>
-            <option value="std_mp3">标准 MP3 · 44.1 kHz</option>
-            <option value="wav_lossless">WAV · 无损</option>
-            <option value="flac">FLAC · 无损压缩</option>
-            <option value="small_ogg">OGG · 节省空间 22 kHz</option>
-          </select>
-        </div>
-        <div class="batch-actions">
-          <button id="addFilesBtn" class="icon-button">从文件导入</button>
-          <button id="cameraBtn" class="icon-button">相机拍摄</button>
-          <button id="convertAllBtn" class="convert-button" disabled>全部转换</button>
-          <button id="clearQueueBtn" class="icon-button">清空队列</button>
-        </div>
+      <div id="filePanel" class="file-panel hidden">
+        <div class="file-icon">♫</div>
+        <div class="file-info"><strong id="fileName">—</strong><span id="fileMeta">—</span></div>
+        <button id="removeBtn" class="icon-button" type="button" aria-label="移除文件">×</button>
       </div>
 
-      <div id="queue" class="queue hidden">
-        <h3>转换队列</h3>
-        <ul id="queueList"></ul>
+      <div class="settings">
+        <div class="field"><label for="format">输出格式</label><div class="select-wrap"><select id="format"><option value="wav">WAV · 无损</option><option value="webm">WebM · 高效</option><option value="ogg">OGG · 开源</option></select></div></div>
+        <div class="field"><label for="quality">音质</label><div class="select-wrap"><select id="quality"><option value="high">高品质 · 48 kHz</option><option value="standard">标准 · 44.1 kHz</option><option value="small">节省空间 · 22 kHz</option></select></div></div>
+        <button id="convertBtn" class="convert-button" type="button" disabled><span>开始转换</span><b>→</b></button>
       </div>
 
-      <div id="progressArea" class="progress-area hidden"><div class="progress-head"><span id="progressLabel">准备就绪</span><span id="progressValue">0%</span></div><div class="progress-track"><div id="progressBar"></div></div></div>
-
-      <div id="history" class="history">
-        <h3>下载历史</h3>
-        <ul id="historyList"></ul>
-        <button id="clearHistory" class="icon-button">清除历史</button>
-      </div>
-
+      <div id="progressArea" class="progress-area hidden"><div class="progress-head"><span id="progressLabel">正在读取文件…</span><span id="progressValue">0%</span></div><div class="progress-track"><div id="progressBar"></div></div></div>
+      <div id="result" class="result hidden"><div class="success-mark">✓</div><div><strong>转换完成</strong><span id="resultMeta">已准备好下载</span></div><a id="downloadBtn" class="download-button" download>下载文件 <b>↓</b></a></div>
       <p id="error" class="error hidden"></p>
     </section>
 
-    <section class="features"><div><span class="feature-icon">◉</span><strong>你的文件很安全</strong><p>不经过服务器，关闭页面即清除临时数据。</p></div><div><span class="feature-icon">ϟ</span><strong>按序批量</strong><p>队列化处理，避免内存峰值。</p></div><div><span class="feature-icon">⌁</span><strong>可选预设</strong><p>快速选择常用输入/输出配置。</p></div></section>
-    <p class="footnote">首次使用 MP3/FLAC 编码会下载 WebAssembly 编解码器，请稍候。</p>
+    <section class="features"><div><span class="feature-icon">◉</span><strong>你的文件很安全</strong><p>不经过服务器，关闭页面即清除。</p></div><div><span class="feature-icon">ϟ</span><strong>快而简单</strong><p>利用设备性能，几秒内完成转换。</p></div><div><span class="feature-icon">⌁</span><strong>完全免费</strong><p>没有水印、次数限制或隐藏收费。</p></div></section>
+    <p class="footnote">提示：转换能力取决于浏览器对源视频编码的支持。推荐使用最新版 Chrome、Edge 或 Safari。</p>
   </main>
   <footer><span>SONORA / LOCAL-FIRST TOOLS</span><span>Made for your files, not our servers.</span></footer>
-
-  <!-- 依赖：用于解析 MIDI 和 FFmpeg（用于 MP3/FLAC 编码） -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.8/dist/ffmpeg.min.js"></script>
-  <script src="https://unpkg.com/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
