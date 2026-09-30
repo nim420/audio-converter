@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="纯前端 MP4、MOV、WebM 转 WAV 等音频格式工具，文件不会上传到服务器。" />
-  <title>本地音频转换器 · MP4 转 WAV</title>
+  <meta name="description" content="纯前端 MP4、MOV、WebM、MIDI 转 WAV/MP3/FLAC 等音频格式工具，文件不会上传到服务器。" />
+  <title>本地音频转换器 · MP4 转 WAV / MP3 / FLAC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,15 +21,15 @@
     <section class="hero">
       <p class="eyebrow">LOCAL AUDIO WORKSPACE <span></span></p>
       <h1>把视频里的声音<br><em>带走。</em></h1>
-      <p class="intro">MP4 转 WAV，也支持 WebM、MOV 等常见视频格式。<br>所有处理都在你的浏览器中完成，文件不会离开设备。</p>
+      <p class="intro">MP4 转 WAV / MP3 / FLAC，也支持 WebM、MOV、MIDI 等常见格式。<br>所有处理都在你的浏览器中完成，文件不会离开设备。</p>
     </section>
 
     <section class="converter-card" aria-label="音频格式转换器">
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="选择或拖入文件">
-        <input id="fileInput" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.mp3,.wav,.m4a" hidden>
+        <input id="fileInput" type="file" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.mp3,.wav,.m4a,.mid,.midi" hidden>
         <div class="upload-icon"><span>↑</span></div>
         <h2>拖入文件，或<span>点击选择</span></h2>
-        <p>支持 MP4 · MOV · WebM · MP3 · WAV · M4A</p>
+        <p>支持 MP4 · MOV · WebM · MP3 · WAV · M4A · MIDI</p>
         <div class="size-note">单个文件最大 2 GB <i>·</i> 无需注册</div>
       </div>
 
@@ -40,7 +40,7 @@
       </div>
 
       <div class="settings">
-        <div class="field"><label for="format">输出格式</label><div class="select-wrap"><select id="format"><option value="wav">WAV · 无损</option><option value="webm">WebM · 高效</option><option value="ogg">OGG · 开源</option></select></div></div>
+        <div class="field"><label for="format">输出格式</label><div class="select-wrap"><select id="format"><option value="wav">WAV · 无损</option><option value="mp3">MP3 · 广泛兼容</option><option value="flac">FLAC · 无损压缩</option><option value="webm">WebM · 高效</option><option value="ogg">OGG · 开源</option></select></div></div>
         <div class="field"><label for="quality">音质</label><div class="select-wrap"><select id="quality"><option value="high">高品质 · 48 kHz</option><option value="standard">标准 · 44.1 kHz</option><option value="small">节省空间 · 22 kHz</option></select></div></div>
         <button id="convertBtn" class="convert-button" type="button" disabled><span>开始转换</span><b>→</b></button>
       </div>
@@ -51,9 +51,13 @@
     </section>
 
     <section class="features"><div><span class="feature-icon">◉</span><strong>你的文件很安全</strong><p>不经过服务器，关闭页面即清除。</p></div><div><span class="feature-icon">ϟ</span><strong>快而简单</strong><p>利用设备性能，几秒内完成转换。</p></div><div><span class="feature-icon">⌁</span><strong>完全免费</strong><p>没有水印、次数限制或隐藏收费。</p></div></section>
-    <p class="footnote">提示：转换能力取决于浏览器对源视频编码的支持。推荐使用最新版 Chrome、Edge 或 Safari。</p>
+    <p class="footnote">提示：MIDI 是事件序列而非音频，我们会在浏览器中合成 MIDI（使用简单合成器）���导出为音频；MP3/FLAC 使用内嵌的编解码器（WebAssembly）。推荐使用最新版 Chrome、Edge 或 Safari。</p>
   </main>
   <footer><span>SONORA / LOCAL-FIRST TOOLS</span><span>Made for your files, not our servers.</span></footer>
+
+  <!-- 依赖：用于解析 MIDI 和 FFmpeg（用于 MP3/FLAC 编码） -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.8/dist/ffmpeg.min.js"></script>
+  <script src="https://unpkg.com/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
