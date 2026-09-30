@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="纯前端 批量音频转换：MP4/MIDI → WAV/MP3/FLAC 等，文件不上传服务器。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="纯前端 批量音频转换：MP4/MIDI → WAV/MP3/FLAC 等，文件不上传服务器。优化了移动端上传体验（相机拍摄、缩略图、触控友好）。" />
   <title>本地音频批量转换器 · Sonora</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,7 +45,8 @@
           </select>
         </div>
         <div class="batch-actions">
-          <button id="addFilesBtn" class="icon-button">添加文件</button>
+          <button id="addFilesBtn" class="icon-button">从文件导入</button>
+          <button id="cameraBtn" class="icon-button">相机拍摄</button>
           <button id="convertAllBtn" class="convert-button" disabled>全部转换</button>
           <button id="clearQueueBtn" class="icon-button">清空队列</button>
         </div>
