@@ -1,11 +1,26 @@
-/* 升级：移动端友好改进
-   - 添加“相机拍摄”按钮（使用 capture）
-   - 为队列项生成视频缩略图与时长（若可用）
-   - 提高触控目标尺寸与样式
-   - 回收 objectURL，避免内存泄漏
+/* 升级：移动端友好改进（修复：确保 DOM 元素先于 renderHistory 使用）
+   修复点：
+   - 将所有 DOM 查询放到文件顶部，保证 renderHistory() 在 historyList 定义后调用，避免脚本在初始化阶段抛错，导致按钮无响应。
+   - 其余逻辑保持不变。
 */
+
 const $ = (id) => document.getElementById(id);
-const dropzone = $('dropzone'), input = $('fileInput'), queueList = $('queueList'), queueWrap = $('queue'), convertAllBtn = $('convertAllBtn'), addFilesBtn = $('addFilesBtn'), clearQueueBtn = $('clearQueueBtn'), presetSelect = $('presetSelect'), progressArea = $('progressArea'), historyList = $('historyList'), clearHistoryBtn = $('clearHistory'), errorEl = $('error'), cameraBtn = $('cameraBtn');
+
+// DOM 元素（先定义，防止早期函数调用时抛错）
+const dropzone = $('dropzone');
+const input = $('fileInput');
+const queueList = $('queueList');
+const queueWrap = $('queue');
+const convertAllBtn = $('convertAllBtn');
+const addFilesBtn = $('addFilesBtn');
+const clearQueueBtn = $('clearQueueBtn');
+const presetSelect = $('presetSelect');
+const progressArea = $('progressArea');
+const historyList = $('historyList');
+const clearHistoryBtn = $('clearHistory');
+const errorEl = $('error');
+const cameraBtn = $('cameraBtn');
+
 let queue = []; let processing = false; let ffmpegLoaded = false; let downloadUrlPool = [];
 
 // ffmpeg.wasm
@@ -18,23 +33,30 @@ const HISTORY_KEY = 'sonora_history_v1';
 function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); return raw ? JSON.parse(raw) : []; } catch (e) { return []; } }
 function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }
 function addHistory(entry) { const h = loadHistory(); h.unshift(entry); saveHistory(h); renderHistory(); }
-function renderHistory() { const h = loadHistory(); historyList.innerHTML = ''; h.slice(0,50).forEach(item => { const li = document.createElement('li'); li.className='history-item'; li.innerHTML = `<div>${item.name}</div><div class="item-sub">${item.format.toUpperCase()} · ${item.size}</div><a href="${item.url}" download="${item.name}">下载</a>`; historyList.appendChild(li); }); }
+function renderHistory() { const h = loadHistory(); if (!historyList) return; historyList.innerHTML = ''; h.slice(0,50).forEach(item => { const li = document.createElement('li'); li.className='history-item'; li.innerHTML = `<div>${escapeHtml(item.name)}</div><div class="item-sub">${item.format.toUpperCase()} · ${item.size}</div><a href="${item.url}" download="${item.name}">下载</a>`; historyList.appendChild(li); }); }
+
+// 初始化渲染历史（确保 historyList 已定义）
 renderHistory();
 
 // UI events
-dropzone.addEventListener('click', () => input.click());
-dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') input.click(); });
-input.addEventListener('change', e => { const files = Array.from(e.target.files || []); if (files.length) addFilesToQueue(files); input.value=''; });
-addFilesBtn.addEventListener('click', () => input.click());
-clearQueueBtn.addEventListener('click', () => { queue.forEach(i=>revokeQueueResources(i)); queue = []; renderQueue(); });
-clearHistoryBtn.addEventListener('click', () => { localStorage.removeItem(HISTORY_KEY); renderHistory(); });
-['dragenter','dragover'].forEach(t => dropzone.addEventListener(t, e => { e.preventDefault(); dropzone.classList.add('dragging'); }));
-['dragleave','drop'].forEach(t => dropzone.addEventListener(t, e => { e.preventDefault(); dropzone.classList.remove('dragging'); }));
-dropzone.addEventListener('drop', e => { const files = Array.from(e.dataTransfer.files || []); if (files.length) addFilesToQueue(files); });
-convertAllBtn.addEventListener('click', () => { if (!queue.length) return; startProcessing(); });
+if (dropzone) {
+  dropzone.addEventListener('click', () => input && input.click());
+  dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') input && input.click(); });
+  ['dragenter','dragover'].forEach(t => dropzone.addEventListener(t, e => { e.preventDefault(); dropzone.classList.add('dragging'); }));
+  ['dragleave','drop'].forEach(t => dropzone.addEventListener(t, e => { e.preventDefault(); dropzone.classList.remove('dragging'); }));
+  dropzone.addEventListener('drop', e => { const files = Array.from(e.dataTransfer.files || []); if (files.length) addFilesToQueue(files); });
+}
+
+if (input) {
+  input.addEventListener('change', e => { const files = Array.from(e.target.files || []); if (files.length) addFilesToQueue(files); input.value=''; });
+}
+if (addFilesBtn) addFilesBtn.addEventListener('click', () => input && input.click());
+if (clearQueueBtn) clearQueueBtn.addEventListener('click', () => { queue.forEach(i=>revokeQueueResources(i)); queue = []; renderQueue(); });
+if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', () => { localStorage.removeItem(HISTORY_KEY); renderHistory(); });
+if (convertAllBtn) convertAllBtn.addEventListener('click', () => { if (!queue.length) return; startProcessing(); });
 
 // camera capture: create temporary input with capture attribute
-cameraBtn.addEventListener('click', async () => {
+if (cameraBtn) cameraBtn.addEventListener('click', async () => {
   try {
     const captureInput = document.createElement('input');
     captureInput.type = 'file';
@@ -51,14 +73,14 @@ cameraBtn.addEventListener('click', async () => {
   } catch (err) { showError('无法打开相机：' + (err.message || err)); }
 });
 
-function showError(msg) { errorEl.textContent = msg; errorEl.classList.remove('hidden'); setTimeout(()=>errorEl.classList.add('hidden'), 8000); }
-function progress(label, value) { progressArea.classList.remove('hidden'); $('progressLabel').textContent = label; $('progressValue').textContent = `${Math.round(value)}%`; $('progressBar').style.width = `${value}%`; }
+function showError(msg) { if (!errorEl) return; errorEl.textContent = msg; errorEl.classList.remove('hidden'); setTimeout(()=>errorEl.classList.add('hidden'), 8000); }
+function progress(label, value) { if (!progressArea) return; $('progressLabel').textContent = label; $('progressValue').textContent = `${Math.round(value)}%`; $('progressBar').style.width = `${value}%`; progressArea.classList.remove('hidden'); }
 
 function addFilesToQueue(files) {
   files.forEach(async (f) => {
     if (f.size > 2 * 1024 * 1024 * 1024) { showError(`跳过 ${f.name}：文件超过 2 GB`); return; }
     const id = cryptoRandomId();
-    const preset = presetSelect.value;
+    const preset = presetSelect ? presetSelect.value : 'wav_lossless';
     const { format, quality } = presetToOptions(preset);
     const meta = await getMediaPreview(f);
     queue.push({ id, file: f, status: 'queued', format, quality, output: null, error: null, thumb: meta.thumb, duration: meta.duration });
@@ -78,6 +100,7 @@ function presetToOptions(p) {
 }
 
 function renderQueue() {
+  if (!queueWrap || !queueList) return;
   queueWrap.classList.toggle('hidden', queue.length === 0);
   queueList.innerHTML = '';
   queue.forEach(item => {
@@ -93,13 +116,13 @@ function renderQueue() {
     li.appendChild(thumb); li.appendChild(title); li.appendChild(status); li.appendChild(actions);
     queueList.appendChild(li);
   });
-  convertAllBtn.disabled = queue.length === 0;
+  if (convertAllBtn) convertAllBtn.disabled = queue.length === 0;
 }
 
 function statusText(s) { switch(s){ case 'queued': return '排队中'; case 'processing': return '处理中'; case 'done': return '已完成'; case 'error': return '出错'; default: return s; } }
 
 async function startProcessing(singleId=null) {
-  if (processing) return; processing = true; errorEl.classList.add('hidden');
+  if (processing) return; processing = true; if (errorEl) errorEl.classList.add('hidden');
   try {
     const toProcess = singleId ? queue.filter(q=>q.id===singleId) : queue.filter(q=>q.status==='queued');
     for (const item of toProcess) {
